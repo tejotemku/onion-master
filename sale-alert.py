@@ -25,7 +25,7 @@ epic_games_free_games_api_link = "https://store-site-backend-static-ipv4.ak.epic
 
 
 def send_info_sale(site, name, old_price, new_price, link=None):
-    msg = f"{site}\n{name}\nstara cena: {old_price}\nnowa cena: {new_price}"
+    msg = f"{site}\n{name}\nOld Price: {old_price}\nNew Price: {new_price}"
     if link:
         msg += f"\n{link}"
     try:
@@ -35,9 +35,9 @@ def send_info_sale(site, name, old_price, new_price, link=None):
 
 
 def send_info_free_game(site, name, link=None, end_date=None):
-    msg = f"DARMOWA GRA na - {site}\nTytuł - {name}"
+    msg = f"FREE GAME on - {site}\nTitle - {name}"
     if end_date:
-        msg += f"\nTermin końcowy - {end_date}"
+        msg += f"\nDeadline - {end_date}"
     if link:
         msg += f"\n{link}"
 
@@ -92,8 +92,8 @@ def xkom():
         name = name.replace("Gorący strzał - ", "")
         tag_list = soup.find_all("span", {})
         old_price_found = False
-        old_price = "nie znaleziono"
-        new_price = "nie znaleziono"
+        old_price = "not found"
+        new_price = "not found"
         for tag in tag_list:
             if "zł" in tag.text:
                 if not old_price_found:
