@@ -238,5 +238,4 @@ sites = {
 
 # telegram_send.configure(conf="onion-master-config.conf", group=True)
 DEBUG = "-d" in sys.argv[1:]
-# start()
-ggdeals()
+start()
