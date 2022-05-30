@@ -1,46 +1,56 @@
 import telegram_send
 import requests
-import datetime
-import time
+from datetime import datetime, timedelta
+from time import mktime, gmtime, time, sleep
 import json
+import sys
 from bs4 import BeautifulSoup
 
+
 # ---------------------------------
-#   MORELE.NET
+#   Program config
+# ---------------------------------
+bot_config_file_name = "onion-master-config.conf"
+DEBUG = False
+
+# ---------------------------------
+#   MORELE.NET config
 # ---------------------------------
 morele_weekdays = [1, 2, 3, 4, 5]
 morele_hours = [(14, 1)]
+morele_link = "https://www.morele.net/"
 
 # ---------------------------------
 #   XKOM-PL config
 # ---------------------------------
 xkom_weekdays = [1, 2, 3, 4, 5, 6, 7]
 xkom_hours = [(10, 1), (22, 1)]
+xkom_link = "https://www.x-kom.pl/goracy_strzal/"
 
 # ---------------------------------
-#   Epic games store
+#   Epic games store config
 # ---------------------------------
 epic_free_game_link = "https://www.epicgames.com/store/en-US/free-games"
 epic_games_free_games_api_link = "https://store-site-backend-static-ipv4.ak.epicgames.com/freeGamesPromotions?locale=en-US&country=PL&allowCountries=PL"
 
-
-def send_info_sale(site, name, old_price, new_price, link=None):
+def send_info_sale(site:str, name:str, old_price:float, new_price:float, link:str=None) -> None:
     msg = f"{site}\n{name}\nOld Price: {old_price}\nNew Price: {new_price}"
     if link:
         msg += f"\n{link}"
+    print(msg)
     try:
         telegram_send_msg(msg)
     except Exception as E:
         print(E)
 
 
-def send_info_free_game(site, name, link=None, end_date=None):
-    msg = f"FREE GAME on - {site}\nTitle - {name}"
+def send_info_free_game(shop:str, name:str, link:str=None, end_date:datetime=None) -> None:
+    msg = f"FREE GAME on - {shop}\nTitle - {name}"
     if end_date:
         msg += f"\nDeadline - {end_date}"
     if link:
         msg += f"\n{link}"
-
+    print(msg)
     try:
         telegram_send_msg(msg)
     except Exception as E:
@@ -48,9 +58,11 @@ def send_info_free_game(site, name, link=None, end_date=None):
 
 
 def telegram_send_msg(message):
-    telegram_send.send(messages=[message],
-                       conf="onion-master-config.conf",
-                       disable_web_page_preview=True)
+    if not DEBUG:
+        telegram_send.send(
+            messages=[message],
+            conf=bot_config_file_name,
+            disable_web_page_preview=True)
 
 
 def get_html(site_url):
@@ -70,24 +82,25 @@ def check_site_by_next_date(next_date, now):
 
 def morele():
     try:
-        soup = get_html("https://www.morele.net/")
+        soup = get_html(morele_link)
         name = soup.find("div", {"class": "promo-box-name"})
         link = name.find("a", {})['href']
         name = str(name.text).replace('\n', '')
         old_price = soup.find("div", {"class": "promo-box-old-price"}).text
         new_price = soup.find("div", {"class": "promo-box-new-price"}).text
-        send_info_sale(site="MORELE NET",
-                       name=name,
-                       old_price=old_price,
-                       new_price=new_price,
-                       link=link)
+        send_info_sale(
+            site="MORELE NET",
+            name=name,
+            old_price=old_price,
+            new_price=new_price,
+            link=link)
     except Exception as E:
         print(E)
 
 
 def xkom():
     try:
-        soup = get_html("https://www.x-kom.pl/goracy_strzal/")
+        soup = get_html(xkom_link)
         name = soup.find("title", {}).text
         name = name.replace("Gorący strzał - ", "")
         tag_list = soup.find_all("span", {})
@@ -102,11 +115,12 @@ def xkom():
                 else:
                     new_price = tag.text
                     break
-        send_info_sale(site="X-KOM PL",
-                       name=name.replace(" - x-kom.pl", ""),
-                       old_price=old_price,
-                       new_price=new_price,
-                       link="https://www.x-kom.pl/goracy_strzal/")
+        send_info_sale(
+            site="X-KOM PL",
+            name=name.replace(" - x-kom.pl", ""),
+            old_price=old_price,
+            new_price=new_price,
+            link="https://www.x-kom.pl/goracy_strzal/")
     except Exception as E:
         print(E)
 
@@ -123,25 +137,31 @@ def epic_games_store(send_msg=True):
                         for item in promotionalOffersNested["promotionalOffers"]:
                             if item["discountSetting"]:
                                 if item["discountSetting"]["discountPercentage"] == 0:
-                                    start_date = datetime.datetime.strptime(item["startDate"],
-                                                                            '20%y-%m-%dT%H:%M:%S.%fZ') + datetime.timedelta(hours=1, minutes=1)
-                                    end_date = datetime.datetime.strptime(item["endDate"],
-                                                                          '20%y-%m-%dT%H:%M:%S.%fZ') + datetime.timedelta(hours=1, minutes=1)
-                                    today = datetime.datetime.now()
+                                    utc_time = datetime.utcnow()
+                                    today = datetime.now()
+                                    time_zone_hour_diff = today - utc_time
+                                    start_date = datetime.strptime(item["startDate"],
+                                                                            '20%y-%m-%dT%H:%M:%S.%fZ') + time_zone_hour_diff
+                                    end_date = datetime.strptime(item["endDate"],
+                                                                          '20%y-%m-%dT%H:%M:%S.%fZ') + time_zone_hour_diff
+                                    
                                     if start_date < today < end_date:
                                         if send_msg:
-                                            send_info_free_game("Epic Games Store", title["title"], epic_free_game_link,
-                                                                end_date)
-                                        sites[epic_games_store].update({"next_date": end_date})
-                                        print("found epic games store game ", title["title"])
+                                            send_info_free_game(
+                                                shop="Epic Games Store", 
+                                                name=title["title"], 
+                                                link=epic_free_game_link,
+                                                end_date=end_date)
+                                        sites[epic_games_store].update({"next_date": end_date - timedelta(minutes=1, seconds=1)})
+                                        print(">>>found epic games store game ", title["title"])
     except Exception as E:
         print(E)
 
 
 def clock():
     while True:
-        time.sleep(60.0 - time.time() % 60)
-        now = datetime.datetime.now()
+        sleep(60.0 - time() % 60)
+        now = datetime.now()
         weekday = now.weekday() + 1
         hour = now.hour
         minute = now.minute
@@ -168,4 +188,5 @@ sites = {
 }
 
 # telegram_send.configure(conf="onion-master-config.conf", group=True)
+DEBUG = "-d" in sys.argv[1:]
 start()
