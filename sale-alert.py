@@ -1,7 +1,7 @@
 import telegram_send
 import requests
-from datetime import date, datetime, timedelta
-from time import mktime, gmtime, time, sleep
+from datetime import datetime, timedelta
+from time import time, sleep
 import json
 import sys
 from bs4 import BeautifulSoup
@@ -180,7 +180,7 @@ def epic_games_store():
         titles = data["data"]["Catalog"]["searchStore"]["elements"]
         for title in titles:
             if title["promotions"]:
-                if ["promotionalOffers"]:
+                if title["promotions"]["promotionalOffers"]:
                     for promotionalOffersNested in title["promotions"]["promotionalOffers"]:
                         for item in promotionalOffersNested["promotionalOffers"]:
                             if item["discountSetting"]:
@@ -192,14 +192,13 @@ def epic_games_store():
                                                                             '20%y-%m-%dT%H:%M:%S.%fZ') + time_zone_hour_diff
                                     end_date = datetime.strptime(item["endDate"],
                                                                           '20%y-%m-%dT%H:%M:%S.%fZ') + time_zone_hour_diff
-                                    
                                     if start_date < today < end_date:
                                         send_info_free_game(
                                             shop="Epic Games Store", 
                                             name=title["title"], 
                                             link=epic_games_link_free_game,
-                                            end_date=end_date)
-                                        sites[epic_games_store].update({"next_date": end_date - timedelta(minutes=1, seconds=1)})
+                                            end_date=end_date  - timedelta(minutes=1, seconds=1))
+                                        sites[epic_games_store].update({"next_date": end_date})
                                         print(">>>found epic games store game ", title["title"])
     except Exception as E:
         print(E)
