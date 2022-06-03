@@ -41,13 +41,14 @@ ggdeals_weekdays = [1, 2, 3, 4, 5, 6, 7]
 ggdeals_hours = [(18, 1)]
 ggdeals_link_cluster = "https://gg.deals/news/?availability=1&title=Free+game&type=1,6"
 ggdeals_link_only_humble_bundle = "https://gg.deals/eu/news/humble-bundle-free-games/"
-ggdeals_link_news_younger_than = timedelta(days=1)
+ggdeals_link_news_younger_than = timedelta(days=2)
+ggdeals_news_excluded_words = [ ["epic", "games"] ]
 
 def send_info_sale(site:str, name:str, old_price:float, new_price:float, link:str=None) -> None:
     msg = f"{site}\n{name}\nOld Price: {old_price}\nNew Price: {new_price}"
     if link:
         msg += f"\n{link}"
-    print(msg)
+    print(msg + "\n")
     try:
         telegram_send_msg(msg)
     except Exception as E:
@@ -60,7 +61,7 @@ def send_info_free_game(shop:str, name:str, link:str=None, end_date:datetime=Non
         msg += f"\nDeadline - {end_date}"
     if link:
         msg += f"\n{link}"
-    print(msg)
+    print(msg + "\n")
     try:
         telegram_send_msg(msg)
     except Exception as E:
@@ -90,7 +91,7 @@ def check_site_by_next_date(next_date, now):
 
 
 def morele():
-    print("Searching morele...")
+    print("Searching morele...\n")
     try:
         soup = get_html(morele_link)
         name = soup.find("div", {"class": "promo-box-name"})
@@ -109,7 +110,7 @@ def morele():
 
 
 def xkom():
-    print("Searching xkom...")
+    print("Searching xkom...\n")
     try:
         soup = get_html(xkom_link)
         name = soup.find("title", {}).text
@@ -142,7 +143,6 @@ def ggdeals():
     
 
 def ggdeals_get_posts(url, msg, shop):
-    print(msg)
     try:
         soup = get_html(url)
         offer_list = soup.find("div", {"class":"list-items news-list"})
@@ -162,18 +162,33 @@ def ggdeals_get_posts(url, msg, shop):
                 post_link_index_start = post_link.find("href=\"") + len("href=\"")
                 post_link_index_end = post_link.find("\"", post_link_index_start + 2 )
                 link = "gg.deals" + post_link[post_link_index_start:post_link_index_end]
-                print(game_name + " - " + link)
-                send_info_free_game(
-                    shop=shop,
-                    name=game_name,
-                    link=link
-                )
+                if not is_news_unwanted(game_name, ggdeals_news_excluded_words):
+                    send_info_free_game(
+                        shop=shop,
+                        name=game_name,
+                        link=link
+                    )
 
     except Exception as E:
         print(E)
 
+
+def is_news_unwanted(news:str, unwanted_words_set):
+    news_words = news.lower().split(' ')
+    for unwanted_words in unwanted_words_set:
+        is_unwanted = True
+        for word in unwanted_words:
+            is_unwanted = is_unwanted and word in news_words
+        if is_unwanted:
+            print(f"Found unwanted news:\n{news}\nContaining: {unwanted_words}\n")
+            return True
+    return False
+
+
+
+
 def epic_games_store():
-    print("Searching epic games store for freebies...")
+    print("Searching epic games store for freebies...\n")
     try:
         egs_data = requests.get(epic_games_free_games_api_link).text
         data = json.loads(egs_data)
@@ -199,7 +214,6 @@ def epic_games_store():
                                             link=epic_games_link_free_game,
                                             end_date=end_date  - timedelta(minutes=1, seconds=1))
                                         sites[epic_games_store].update({"next_date": end_date})
-                                        print(">>>found epic games store game ", title["title"])
     except Exception as E:
         print(E)
 
@@ -234,6 +248,7 @@ sites = {
     epic_games_store: {"schedule": "fluid_period_schedule", "next_date": None},
     ggdeals: {"schedule": "fixed_schedule","weekdays": ggdeals_weekdays, "hours": ggdeals_hours }
 }
+
 
 # telegram_send.configure(conf="onion-master-config.conf", group=True)
 DEBUG = "-d" in sys.argv[1:]
