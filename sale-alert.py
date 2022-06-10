@@ -1,7 +1,7 @@
 import telegram_send
 import requests
-from datetime import date, datetime, timedelta
-from time import mktime, gmtime, time, sleep
+from datetime import datetime, timedelta
+from time import time, sleep
 import json
 import sys
 from bs4 import BeautifulSoup
@@ -42,12 +42,13 @@ ggdeals_hours = [(18, 1)]
 ggdeals_link_cluster = "https://gg.deals/news/?availability=1&title=Free+game&type=1,6"
 ggdeals_link_only_humble_bundle = "https://gg.deals/eu/news/humble-bundle-free-games/"
 ggdeals_link_news_younger_than = timedelta(days=1)
+ggdeals_news_excluded_words = [ ["epic", "games"] ]
 
 def send_info_sale(site:str, name:str, old_price:float, new_price:float, link:str=None) -> None:
     msg = f"{site}\n{name}\nOld Price: {old_price}\nNew Price: {new_price}"
     if link:
         msg += f"\n{link}"
-    print(msg + '\n')
+    print(msg + "\n")
     try:
         telegram_send_msg(msg)
     except Exception as E:
@@ -60,7 +61,7 @@ def send_info_free_game(shop:str, name:str, link:str=None, end_date:datetime=Non
         msg += f"\nDeadline - {end_date}"
     if link:
         msg += f"\n{link}"
-    print(msg + '\n')
+    print(msg + "\n")
     try:
         telegram_send_msg(msg)
     except Exception as E:
@@ -142,7 +143,6 @@ def ggdeals():
     
 
 def ggdeals_get_posts(url, msg, shop):
-    print(msg)
     try:
         soup = get_html(url)
         offer_list = soup.find("div", {"class":"news-list"})
@@ -162,15 +162,30 @@ def ggdeals_get_posts(url, msg, shop):
                 post_link_index_start = post_link.find("href=\"") + len("href=\"")
                 post_link_index_end = post_link.find("\"", post_link_index_start + 2 )
                 link = "gg.deals" + post_link[post_link_index_start:post_link_index_end]
-                print(game_name + " - " + link)
-                send_info_free_game(
-                    shop=shop,
-                    name=game_name,
-                    link=link
-                )
+                if not is_news_unwanted(game_name, ggdeals_news_excluded_words):
+                    send_info_free_game(
+                        shop=shop,
+                        name=game_name,
+                        link=link
+                    )
 
     except Exception as E:
         print(E)
+
+
+def is_news_unwanted(news:str, unwanted_words_set):
+    news_words = news.lower().split(' ')
+    for unwanted_words in unwanted_words_set:
+        is_unwanted = True
+        for word in unwanted_words:
+            is_unwanted = is_unwanted and word in news_words
+        if is_unwanted:
+            print(f"Found unwanted news:\n{news}\nContaining: {unwanted_words}\n")
+            return True
+    return False
+
+
+
 
 def epic_games_store():
     print("Searching epic games store for freebies...\n")
@@ -180,7 +195,7 @@ def epic_games_store():
         titles = data["data"]["Catalog"]["searchStore"]["elements"]
         for title in titles:
             if title["promotions"]:
-                if ["promotionalOffers"]:
+                if title["promotions"]["promotionalOffers"]:
                     for promotionalOffersNested in title["promotions"]["promotionalOffers"]:
                         for item in promotionalOffersNested["promotionalOffers"]:
                             if item["discountSetting"]:
@@ -192,15 +207,13 @@ def epic_games_store():
                                                                             '20%y-%m-%dT%H:%M:%S.%fZ') + time_zone_hour_diff
                                     end_date = datetime.strptime(item["endDate"],
                                                                           '20%y-%m-%dT%H:%M:%S.%fZ') + time_zone_hour_diff
-                                    
                                     if start_date < today < end_date:
                                         send_info_free_game(
                                             shop="Epic Games Store", 
                                             name=title["title"], 
                                             link=epic_games_link_free_game,
-                                            end_date=end_date)
-                                        sites[epic_games_store].update({"next_date": end_date - timedelta(minutes=1, seconds=1)})
-                                        print(">>>found epic games store game ", title["title"])
+                                            end_date=end_date  - timedelta(minutes=1, seconds=1))
+                                        sites[epic_games_store].update({"next_date": end_date})
     except Exception as E:
         print(E)
 
@@ -235,6 +248,7 @@ sites = {
     epic_games_store: {"schedule": "fluid_period_schedule", "next_date": None},
     ggdeals: {"schedule": "fixed_schedule","weekdays": ggdeals_weekdays, "hours": ggdeals_hours }
 }
+
 
 # telegram_send.configure(conf="onion-master-config.conf", group=True)
 DEBUG = "-d" in sys.argv[1:]
