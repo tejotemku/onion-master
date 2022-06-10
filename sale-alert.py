@@ -47,7 +47,7 @@ def send_info_sale(site:str, name:str, old_price:float, new_price:float, link:st
     msg = f"{site}\n{name}\nOld Price: {old_price}\nNew Price: {new_price}"
     if link:
         msg += f"\n{link}"
-    print(msg)
+    print(msg + '\n')
     try:
         telegram_send_msg(msg)
     except Exception as E:
@@ -60,7 +60,7 @@ def send_info_free_game(shop:str, name:str, link:str=None, end_date:datetime=Non
         msg += f"\nDeadline - {end_date}"
     if link:
         msg += f"\n{link}"
-    print(msg)
+    print(msg + '\n')
     try:
         telegram_send_msg(msg)
     except Exception as E:
@@ -90,7 +90,7 @@ def check_site_by_next_date(next_date, now):
 
 
 def morele():
-    print("Searching morele...")
+    print("Searching morele...\n")
     try:
         soup = get_html(morele_link)
         name = soup.find("div", {"class": "promo-box-name"})
@@ -109,7 +109,7 @@ def morele():
 
 
 def xkom():
-    print("Searching xkom...")
+    print("Searching xkom...\n")
     try:
         soup = get_html(xkom_link)
         name = soup.find("title", {}).text
@@ -137,15 +137,15 @@ def xkom():
 
 
 def ggdeals():
-    ggdeals_get_posts(ggdeals_link_only_humble_bundle, "Searching ggdeals for humble bundle...", "Humble Bundle")
-    ggdeals_get_posts(ggdeals_link_cluster, "Searching ggdeals for freebies...", "GG.Deals")
+    ggdeals_get_posts(ggdeals_link_only_humble_bundle, "Searching ggdeals for humble bundle...\n", "Humble Bundle")
+    ggdeals_get_posts(ggdeals_link_cluster, "Searching ggdeals for freebies...\n", "GG.Deals")
     
 
 def ggdeals_get_posts(url, msg, shop):
     print(msg)
     try:
         soup = get_html(url)
-        offer_list = soup.find("div", {"class":"list-items news-list"})
+        offer_list = soup.find("div", {"class":"news-list"})
         offers = offer_list.find_all("div", {"class":"hoverable-box"})
         utc_time = datetime.utcnow()
 
@@ -173,7 +173,7 @@ def ggdeals_get_posts(url, msg, shop):
         print(E)
 
 def epic_games_store():
-    print("Searching epic games store for freebies...")
+    print("Searching epic games store for freebies...\n")
     try:
         egs_data = requests.get(epic_games_free_games_api_link).text
         data = json.loads(egs_data)
