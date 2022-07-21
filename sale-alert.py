@@ -40,7 +40,7 @@ epic_games_latest_free_games = []
 # ---------------------------------
 ggdeals_weekdays = [1, 2, 3, 4, 5, 6, 7]
 ggdeals_hours = [(18, 1)]
-ggdeals_link_cluster = "https://gg.deals/news/?availability=1&title=Free+game&type=1,6"
+ggdeals_link_cluster = "https://gg.deals/news/?availability=1&title=Free&type=1,6"
 ggdeals_link_only_humble_bundle = "https://gg.deals/eu/news/humble-bundle-free-games/"
 ggdeals_link_news_younger_than = timedelta(days=1)
 ggdeals_news_excluded_words = [ ["epic", "games"] ]
