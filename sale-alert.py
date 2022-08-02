@@ -39,8 +39,8 @@ epic_games_latest_free_games = []
 #   GG.Deals config
 # ---------------------------------
 ggdeals_weekdays = [1, 2, 3, 4, 5, 6, 7]
-ggdeals_hours = [(18, 1)]
-ggdeals_link_cluster = "https://gg.deals/news/?availability=1&title=Free&type=1,6"
+ggdeals_hours = [(17, 1)]
+ggdeals_link_cluster = "https://gg.deals/news/?availability=1&title=free&type=1,6"
 ggdeals_link_only_humble_bundle = "https://gg.deals/eu/news/humble-bundle-free-games/"
 ggdeals_link_news_younger_than = timedelta(days=1)
 ggdeals_news_excluded_words = [ ["epic", "games"] ]
@@ -136,10 +136,11 @@ def ggdeals():
     ggdeals_get_posts(ggdeals_link_cluster, "Searching ggdeals for freebies...\n", "GG.Deals")
     
 def ggdeals_get_posts(url, msg, shop):
+    print(msg)
     try:
         soup = get_html(url)
         offer_list = soup.find("div", {"class":"news-list"})
-        offers = offer_list.find_all("div", {"class":"hoverable-box"})
+        offers = offer_list.find_all("article", {"class":"hoverable-box"})
         utc_time = datetime.utcnow()
 
         for offer in offers:
@@ -222,7 +223,10 @@ def clock():
                 key()
 
 def start():
+    # flex schedule
     epic_games_store(not SKIP_FIRST)
+    
+    # strict schedule
     if not SKIP_FIRST:
         xkom()
         morele()
