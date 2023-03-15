@@ -1,18 +1,16 @@
 from calendar import c
-import telegram_send
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, tzinfo
 from time import time, sleep
 import json
 import sys
+from pytz import timezone
 from bs4 import BeautifulSoup
-
 
 # ---------------------------------
 #   Program config
 # ---------------------------------
 bot_config_file_name = "onion-master-config.conf"
-DEBUG = False
 
 # ---------------------------------
 #   MORELE.NET config
@@ -69,10 +67,8 @@ def send_info_free_game(shop:str, name:str, link:str=None, end_date:datetime=Non
 
 def telegram_send_msg(message):
     if not DEBUG:
-        telegram_send.send(
-            messages=[message],
-            conf=bot_config_file_name,
-            disable_web_page_preview=True)
+        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={CHAT_ID}&text={message}&disable_web_page_preview=true"
+        requests.get(url).json()
 
 def get_html(site_url):
     header = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko)\
@@ -212,7 +208,7 @@ def epic_games_store(send_message=True):
 def clock():
     while True:
         sleep(60.0 - time() % 60)
-        now = datetime.now()
+        now = datetime.now(timezone(TIMEZONE))
         weekday = now.weekday() + 1
         hour = now.hour
         minute = now.minute
@@ -235,13 +231,20 @@ def start():
 
 sites = {
     morele: {"schedule": "fixed_schedule", "weekdays": morele_weekdays, "hours": morele_hours},
-    xkom: {"schedule": "fixed_schedule", "weekdays": xkom_weekdays, "hours": xkom_hours},
+    # xkom: {"schedule": "fixed_schedule", "weekdays": xkom_weekdays, "hours": xkom_hours},
     epic_games_store: {"schedule": "fluid_period_schedule", "next_date": None},
     ggdeals: {"schedule": "fixed_schedule","weekdays": ggdeals_weekdays, "hours": ggdeals_hours }
 }
 
 
-# telegram_send.configure(conf="onion-master-config.conf", group=True)
 DEBUG = "-d" in sys.argv[1:]
 SKIP_FIRST = "-s" in sys.argv[1:]
+TIMEZONE = "CET"
+
+bot_config_file = open(bot_config_file_name)
+bot_config = bot_config_file.read().split("\n")
+bot_config_file.close()
+TOKEN = next(x for x in bot_config if "token" in x).replace("token = ","")
+CHAT_ID = next(x for x in bot_config if "chat_id" in x).replace("chat_id = ","")
+
 start()
