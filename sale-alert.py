@@ -48,10 +48,7 @@ def send_info_sale(site:str, name:str, old_price:float, new_price:float, link:st
     if link:
         msg += f"\n{link}"
     print(msg + "\n")
-    try:
-        telegram_send_msg(msg)
-    except Exception as E:
-        print(E)
+    telegram_send_msg(msg)
 
 def send_info_free_game(shop:str, name:str, link:str=None, end_date:datetime=None) -> None:
     msg = f"FREE GAME - {shop}\nTitle - {name}"
@@ -60,15 +57,15 @@ def send_info_free_game(shop:str, name:str, link:str=None, end_date:datetime=Non
     if link:
         msg += f"\n{link}"
     print(msg + "\n")
-    try:
-        telegram_send_msg(msg)
-    except Exception as E:
-        print(E)
+    telegram_send_msg(msg)
 
 def telegram_send_msg(message):
-    if not DEBUG:
-        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={CHAT_ID}&text={message}&disable_web_page_preview=true"
-        requests.get(url).json()
+    try:
+        if not DEBUG:
+            url = f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={CHAT_ID}&text={message}&disable_web_page_preview=true"
+            requests.get(url).json()
+    except Exception as E:
+        print(E)
 
 def get_html(site_url):
     header = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko)\
