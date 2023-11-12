@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, tzinfo
 from time import time, sleep
 import json
 import sys
-from pytz import timezone
+from pytz import timezone, UTC
 from bs4 import BeautifulSoup
 
 # ---------------------------------
@@ -80,7 +80,7 @@ def check_site_by_weekday_and_hour(weekday, hour, site_weekdays, site_hours):
     return hour in site_hours and weekday in site_weekdays
 
 def check_site_by_next_date(next_date, now):
-    return next_date and next_date < now
+    return next_date and UTC.localize(next_date) < now
 
 def morele():
     print("Searching morele...\n")
@@ -224,7 +224,7 @@ def start():
     
     # strict schedule
     if not SKIP_FIRST:
-        xkom()
+        # xkom()
         morele()
         ggdeals()
     clock()
