@@ -1,6 +1,6 @@
 from calendar import c
 import requests
-from datetime import datetime, timedelta, tzinfo
+from datetime import datetime, timedelta
 from time import time, sleep
 import json
 import sys
@@ -44,7 +44,7 @@ ggdeals_link_news_younger_than = timedelta(days=1)
 ggdeals_news_excluded_words = [ ["epic", "games"] ]
 
 def send_info_sale(site:str, name:str, old_price:float, new_price:float, link:str=None) -> None:
-    msg = f"{site}\n{name}\nOld Price: {old_price}\nNew Price: {new_price}"
+    msg = f"{site.strip()}\n{name.strip()}\nOld Price: {str(old_price).strip()}\nNew Price: {str(new_price).strip()}"
     if link:
         msg += f"\n{link}"
     print(msg + "\n")
@@ -88,6 +88,13 @@ def morele():
         name = str(name.text).replace('\n', '')
         old_price = soup.find("div", {"class": "promo-box-old-price"}).text
         new_price = soup.find("div", {"class": "promo-box-new-price"}).text
+        old_price=old_price[old_price.find('\n'):].replace('\n', '').replace("Cena bez kodu", "").replace(":", "")
+        new_price=new_price[new_price.find('\n'):].replace('\n', '').replace("Cena z kodem", "").replace(":", "")
+    
+        new_price=new_price.split(" ")
+        new_price=[x for x in new_price if x != '']
+        new_price = f"{new_price[1]} {new_price[2]} | code: {new_price[0]}"
+
         send_info_sale(
             site="MORELE NET",
             name=name,
